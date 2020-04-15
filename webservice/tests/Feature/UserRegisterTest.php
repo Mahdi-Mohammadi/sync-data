@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Outbox;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Http\JsonResponse;
@@ -19,9 +20,10 @@ class UserRegisterTest extends TestCase
      */
     public function testNewUserRegistration()
     {
+        $this->withoutExceptionHandling();
         $response = $this->post(route('users.store'), [
-            'email' => 'example@gmail.com',
-            'name'  => 'Ali Kalan',
+            'email'    => 'example@gmail.com',
+            'name'     => 'Ali Kalan',
             'password' => '847598759384'
         ]);
 
@@ -29,9 +31,19 @@ class UserRegisterTest extends TestCase
 
         $response->assertJson([
             'data' => [
-            'email' => 'example@gmail.com',
-            'name'  => 'Ali Kalan'
-        ]]);
+                'email' => 'example@gmail.com',
+                'name'  => 'Ali Kalan'
+            ]
+        ]);
+
+        $outbox = Outbox::where([
+            'published' => false,
+            'payload->entity' => User::class,
+            'payload->name' => 'Ali Kalan',
+            'payload->email' => 'example@gmail.com'
+        ])->exists();
+
+        $this->assertTrue($outbox);
 
     }
 
@@ -40,8 +52,8 @@ class UserRegisterTest extends TestCase
         $user = factory(User::class)->create();
 
         $response = $this->post(route('users.store'), [
-            'email' => $user->email,
-            'name'  => 'Ali Kalan',
+            'email'    => $user->email,
+            'name'     => 'Ali Kalan',
             'password' => '847598759384'
         ]);
 
